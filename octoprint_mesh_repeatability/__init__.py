@@ -14,8 +14,7 @@ class MeshRepeatabilityPlugin(
     octoprint.plugin.TemplatePlugin,
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.SimpleApiPlugin,
-    octoprint.plugin.EventHandlerPlugin,
-    octoprint.plugin.SoftwareUpdatePlugin
+    octoprint.plugin.EventHandlerPlugin
 ):
     def __init__(self):
         self._capture_state = "idle"
