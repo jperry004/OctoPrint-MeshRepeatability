@@ -1,43 +1,41 @@
 $(function() {
     function MeshRepeatabilityViewModel(parameters) {
         var self = this;
+        var PLUGIN_ID = "mesh_repeatability";
+
+        console.log("[MeshRepeat] ViewModel constructor called");
 
         self.history = ko.observableArray([]);
         self.selectedRecord = ko.observable(null);
         self.isCapturing = ko.observable(false);
         self.diagnostics = ko.observable(null);
 
+        // ── Fetch History (GET) ──────────────────────────────────
         self.fetchHistory = function() {
-            $.ajax({
-                url: API_BASEURL + "plugin/mesh_repeatability",
-                type: "GET",
-                success: function(response) {
-                    self.history(response.history);
+            console.log("[MeshRepeat] fetchHistory() called");
+            OctoPrint.simpleApiGet(PLUGIN_ID)
+                .done(function(response) {
+                    console.log("[MeshRepeat] fetchHistory OK:", response);
+                    self.history(response.history || []);
                     if (response.diagnostics) {
                         self.diagnostics(response.diagnostics);
                     }
                     if (self.history().length > 0 && !self.selectedRecord()) {
                         self.selectedRecord(self.history()[0]);
                     }
-                    console.log("[Mesh Repeatability] History fetched:", response);
-                },
-                error: function(err) {
-                    console.error("[Mesh Repeatability] Failed to fetch history:", err);
-                }
-            });
+                })
+                .fail(function(xhr) {
+                    console.error("[MeshRepeat] fetchHistory FAILED:", xhr.status, xhr.responseText);
+                });
         };
 
+        // ── Capture Now (POST) ───────────────────────────────────
         self.captureNow = function() {
+            console.log("[MeshRepeat] captureNow() clicked");
             self.isCapturing(true);
-            console.log("[Mesh Repeatability] Manual capture triggered");
-            $.ajax({
-                url: API_BASEURL + "plugin/mesh_repeatability",
-                type: "POST",
-                dataType: "json",
-                data: JSON.stringify({ "command": "capture_now" }),
-                contentType: "application/json; charset=UTF-8",
-                success: function(response) {
-                    console.log("[Mesh Repeatability] Capture response:", response);
+            OctoPrint.simpleApiCommand(PLUGIN_ID, "capture_now", {})
+                .done(function(response) {
+                    console.log("[MeshRepeat] captureNow OK:", response);
                     new PNotify({
                         title: "Mesh Repeatability",
                         text: "Capturing mesh from printer...",
@@ -49,32 +47,27 @@ $(function() {
                         self.isCapturing(false);
                         self.fetchHistory();
                     }, 3000);
-                },
-                error: function(err) {
-                    console.error("[Mesh Repeatability] Capture error:", err);
+                })
+                .fail(function(xhr) {
+                    console.error("[MeshRepeat] captureNow FAILED:", xhr.status, xhr.responseText);
                     new PNotify({
                         title: "Mesh Repeatability",
-                        text: "Failed to start capture",
+                        text: "Failed to start capture (HTTP " + xhr.status + ")",
                         type: "error",
                         hide: true,
                         delay: 5000
                     });
                     self.isCapturing(false);
-                }
-            });
+                });
         };
 
+        // ── Save Current Mesh (POST) ─────────────────────────────
         self.saveCurrentMesh = function() {
+            console.log("[MeshRepeat] saveCurrentMesh() clicked");
             self.isCapturing(true);
-            console.log("[Mesh Repeatability] 'Save Current Mesh' triggered");
-            $.ajax({
-                url: API_BASEURL + "plugin/mesh_repeatability",
-                type: "POST",
-                dataType: "json",
-                data: JSON.stringify({ "command": "save_current_mesh" }),
-                contentType: "application/json; charset=UTF-8",
-                success: function(response) {
-                    console.log("[Mesh Repeatability] Mesh save response:", response);
+            OctoPrint.simpleApiCommand(PLUGIN_ID, "save_current_mesh", {})
+                .done(function(response) {
+                    console.log("[MeshRepeat] saveCurrentMesh OK:", response);
                     new PNotify({
                         title: "Mesh Repeatability",
                         text: "Capturing current mesh from printer...",
@@ -86,33 +79,28 @@ $(function() {
                         self.isCapturing(false);
                         self.fetchHistory();
                     }, 3000);
-                },
-                error: function(err) {
-                    console.error("[Mesh Repeatability] Mesh save error:", err);
+                })
+                .fail(function(xhr) {
+                    console.error("[MeshRepeat] saveCurrentMesh FAILED:", xhr.status, xhr.responseText);
                     new PNotify({
                         title: "Mesh Repeatability",
-                        text: "Failed to save mesh",
+                        text: "Failed to save mesh (HTTP " + xhr.status + ")",
                         type: "error",
                         hide: true,
                         delay: 5000
                     });
                     self.isCapturing(false);
-                }
-            });
+                });
         };
 
+        // ── Export CSV (POST) ────────────────────────────────────
         self.exportCsv = function() {
-            console.log("[Mesh Repeatability] CSV export triggered");
-            $.ajax({
-                url: API_BASEURL + "plugin/mesh_repeatability",
-                type: "POST",
-                dataType: "json",
-                data: JSON.stringify({ "command": "export_csv" }),
-                contentType: "application/json; charset=UTF-8",
-                success: function(response) {
-                    console.log("[Mesh Repeatability] CSV export success");
-                    if (response.csv) {
-                        var blob = new Blob([response.csv], { type: "text/csv;charset=utf-8;" });
+            console.log("[MeshRepeat] exportCsv() clicked");
+            OctoPrint.simpleApiCommand(PLUGIN_ID, "export_csv", {})
+                .done(function(response) {
+                    console.log("[MeshRepeat] exportCsv OK");
+                    if (response && response.csv) {
+                        var blob = new Blob([response.csv], { type: "text/csv;charset=utf-8" });
                         var url = URL.createObjectURL(blob);
                         var link = document.createElement("a");
                         link.href = url;
@@ -129,24 +117,26 @@ $(function() {
                             delay: 3000
                         });
                     }
-                },
-                error: function(err) {
-                    console.error("[Mesh Repeatability] CSV export error:", err);
+                })
+                .fail(function(xhr) {
+                    console.error("[MeshRepeat] exportCsv FAILED:", xhr.status, xhr.responseText);
                     new PNotify({
                         title: "Mesh Repeatability",
-                        text: "CSV export failed",
+                        text: "CSV export failed (HTTP " + xhr.status + ")",
                         type: "error",
                         hide: true,
                         delay: 5000
                     });
-                }
-            });
+                });
         };
 
+        // ── Select Record ────────────────────────────────────────
         self.selectRecord = function(record) {
+            console.log("[MeshRepeat] selectRecord():", record.id);
             self.selectedRecord(record);
         };
 
+        // ── Format Matrix for display ────────────────────────────
         self.formatMatrix = function(matrix) {
             if (!matrix || matrix.length === 0) return "No data";
             return matrix.map(function(row) {
@@ -156,10 +146,17 @@ $(function() {
             }).join("\n");
         };
 
+        // ── Lifecycle ────────────────────────────────────────────
         self.onBeforeBinding = function() {
-            console.log("[Mesh Repeatability] Plugin loaded and initialized");
+            console.log("[MeshRepeat] onBeforeBinding - plugin initializing");
             self.fetchHistory();
         };
+
+        self.onAfterBinding = function() {
+            console.log("[MeshRepeat] onAfterBinding - bindings applied, UI ready");
+        };
+
+        console.log("[MeshRepeat] ViewModel constructed OK");
     }
 
     OCTOPRINT_VIEWMODELS.push({

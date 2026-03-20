@@ -37,7 +37,9 @@
         <div class="span8" data-bind="with: selectedRecord">
             <h4>Details: <span data-bind="text: new Date(timestamp * 1000).toLocaleString()"></span></h4>
             <p><strong>Status:</strong> <span data-bind="text: parse_status"></span></p>
-            <p class="text-error" data-bind="if: parse_error, text: parse_error"></p>
+            <!-- ko if: parse_error -->
+            <p class="text-error" data-bind="text: parse_error"></p>
+            <!-- /ko -->
 
             <ul class="nav nav-tabs">
                 <li class="active"><a href="#mesh_repeatability_tab_stats" data-toggle="tab">Stats & Mesh</a></li>
