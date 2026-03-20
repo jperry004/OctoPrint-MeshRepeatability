@@ -435,7 +435,7 @@ class MeshRepeatabilityPlugin(
 
 
 __plugin_name__ = "Mesh Repeatability"
-__plugin_version__ = "0.3.0"
+__plugin_version__ = "0.3.1"
 __plugin_pythoncompat__ = ">=3.7,<4"
 
 
