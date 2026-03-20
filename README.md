@@ -1,4 +1,4 @@
-# OctoPrint Mesh Repeatability Plugin (MVP v0.2.0)
+# OctoPrint Mesh Repeatability Plugin (MVP v0.2.1)
 
 A powerful OctoPrint plugin for capturing and comparing Marlin bed leveling mesh data to test printer repeatability. Perfect for troubleshooting leveling issues and validating mechanical stability.
 
@@ -41,45 +41,30 @@ A powerful OctoPrint plugin for capturing and comparing Marlin bed leveling mesh
 
 ## Installation
 
-### Prerequisites
-- OctoPrint 1.5.0 or later
-- Python 3.7+
-- SSH access to OctoPrint server (or terminal if running locally)
+### Install From OctoPrint "Get More..."
 
-### Steps
+In OctoPrint:
 
-1. **SSH into your OctoPrint server** (or open terminal locally):
-   ```bash
-   ssh pi@octopi.local
-   # or your server IP/hostname
-   ```
+1. Open **Settings -> Plugin Manager**
+2. Click **Get More...**
+3. Paste this URL into **... from URL**
 
-2. **Activate OctoPrint virtual environment**:
-   ```bash
-   source ~/oprint/bin/activate
-   # or your venv location if different
-   ```
+```text
+https://github.com/jperry004/OctoPrint-MeshRepeatability/archive/refs/heads/main.zip
+```
 
-3. **Clone or download this repository** to your local machine, then upload to server:
-   ```bash
-   # Option A: Clone (if git available)
-   git clone https://github.com/yourusername/OctoPrint-MeshRepeatability.git
-   cd OctoPrint-MeshRepeatability
+4. Click **Install**
+5. Restart OctoPrint when prompted
 
-   # Option B: Download ZIP, extract, and upload
-   ```
+After restart, look for the new **Mesh Repeatability** tab.
 
-4. **Install the plugin**:
-   ```bash
-   pip install -e .
-   ```
+### Manual Install
 
-5. **Restart OctoPrint**:
-   ```bash
-   sudo service octoprint restart
-   ```
+If you prefer the command line:
 
-6. **Refresh your browser** and look for the new **"Mesh Repeatability"** tab in OctoPrint.
+```bash
+pip install https://github.com/jperry004/OctoPrint-MeshRepeatability/archive/refs/heads/main.zip
+```
 
 ---
 

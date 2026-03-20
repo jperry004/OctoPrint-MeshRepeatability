@@ -25,7 +25,7 @@ class MeshRepeatabilityPlugin(
         self._data_folder = self.get_plugin_data_folder()
         if not os.path.exists(self._data_folder):
             os.makedirs(self._data_folder)
-        self._logger.info("Mesh Repeatability MVP v0.2.0 initialized (with pruning + CSV export).")
+        self._logger.info("Mesh Repeatability MVP v0.2.1 initialized (with pruning + CSV export).")
 
     # -- Event Hook (Print Done / Failed / Cancelled) --
     def on_event(self, event, payload):
@@ -248,6 +248,7 @@ class MeshRepeatabilityPlugin(
         return dict(js=["js/mesh_repeatability.js"])
 
 __plugin_name__ = "Mesh Repeatability MVP"
+__plugin_version__ = "0.2.1"
 __plugin_pythoncompat__ = ">=3.7,<4"
 
 def __plugin_load__():
