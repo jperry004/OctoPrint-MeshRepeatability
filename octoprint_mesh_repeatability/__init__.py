@@ -558,7 +558,7 @@ class MeshRepeatabilityPlugin(
 
     # -- UI Mixins --
     def get_template_configs(self):
-        return [dict(type="tab", name="Mesh Repeatability", custom_bindings=True)]
+        return [dict(type="tab", name="Mesh Repeatability")]
 
     def get_assets(self):
         return dict(js=["js/mesh_repeatability.js"])
