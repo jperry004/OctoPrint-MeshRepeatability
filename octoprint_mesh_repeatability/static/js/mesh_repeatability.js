@@ -2,6 +2,7 @@ $(function() {
     function MeshRepeatabilityViewModel(parameters) {
         var self = this;
         var PLUGIN_ID = "mesh_repeatability";
+        var rootSelector = "#tab_plugin_mesh_repeatability";
 
         console.log("[MeshRepeat] ViewModel constructor called");
 
@@ -9,6 +10,15 @@ $(function() {
         self.selectedRecord = ko.observable(null);
         self.isCapturing = ko.observable(false);
         self.diagnostics = ko.observable(null);
+
+        self.updateActionButtons = function() {
+            var capturing = self.isCapturing();
+            $("#mesh_repeatability_capture_now").prop("disabled", capturing);
+            $("#mesh_repeatability_save_current").prop("disabled", capturing);
+            $("#mesh_repeatability_refresh_history").prop("disabled", capturing);
+            $("#mesh_repeatability_export_csv").prop("disabled", capturing);
+            $("#mesh_repeatability_capture_now_label").text(capturing ? "Capturing..." : "Capture Mesh Now");
+        };
 
         // ── Fetch History (GET) ──────────────────────────────────
         self.fetchHistory = function() {
@@ -154,7 +164,29 @@ $(function() {
 
         self.onAfterBinding = function() {
             console.log("[MeshRepeat] onAfterBinding - bindings applied, UI ready");
+            $(rootSelector).off("click.meshrepeat");
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_capture_now", function(e) {
+                e.preventDefault();
+                self.captureNow();
+            });
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_save_current", function(e) {
+                e.preventDefault();
+                self.saveCurrentMesh();
+            });
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_refresh_history", function(e) {
+                e.preventDefault();
+                self.fetchHistory();
+            });
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_export_csv", function(e) {
+                e.preventDefault();
+                self.exportCsv();
+            });
+            self.updateActionButtons();
         };
+
+        self.isCapturing.subscribe(function() {
+            self.updateActionButtons();
+        });
 
         console.log("[MeshRepeat] ViewModel constructed OK");
     }

@@ -1,13 +1,13 @@
 <div id="tab_plugin_mesh_repeatability">
     <div class="row-fluid">
-        <button class="btn btn-primary" data-bind="click: captureNow, disable: isCapturing">
-            <span data-bind="text: isCapturing() ? 'Capturing...' : 'Capture Mesh Now'"></span>
+        <button id="mesh_repeatability_capture_now" class="btn btn-primary">
+            <span id="mesh_repeatability_capture_now_label">Capture Mesh Now</span>
         </button>
-        <button class="btn btn-info" data-bind="click: saveCurrentMesh, disable: isCapturing">
+        <button id="mesh_repeatability_save_current" class="btn btn-info">
             <i class="icon-save"></i> Save Current Mesh
         </button>
-        <button class="btn" data-bind="click: fetchHistory">Refresh History</button>
-        <button class="btn btn-success" data-bind="click: exportCsv">Export History as CSV</button>
+        <button id="mesh_repeatability_refresh_history" class="btn">Refresh History</button>
+        <button id="mesh_repeatability_export_csv" class="btn btn-success">Export History as CSV</button>
     </div>
 
     <!-- Diagnostic Info -->
