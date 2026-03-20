@@ -1,4 +1,4 @@
-# OctoPrint Mesh Repeatability Plugin (MVP v0.2.1)
+# OctoPrint Mesh Repeatability Plugin (v0.2.1)
 
 A powerful OctoPrint plugin for capturing and comparing Marlin bed leveling mesh data to test printer repeatability. Perfect for troubleshooting leveling issues and validating mechanical stability.
 
@@ -216,7 +216,7 @@ ok
 - **Bilinear Only**: Works strictly with Marlin bilinear leveling. UBL (Unified Bed Leveling) not supported yet.
 - **Sequential Assumption**: Assumes M420 V commands don't overlap. Rapid-fire M420 V spam could theoretically blend captures, though the `ok` terminator prevents infinite loops.
 - **Manual Pruning**: If you want to clean up history, delete files manually from `~/.octoprint/data/mesh_repeatability/`
-- **5-Second Wait**: UI waits 5 seconds before refreshing after manual capture (M420 V is instant, but added buffer). Click "Refresh History" if you want to see results immediately.
+- **3-Second Wait**: UI waits 3 seconds before refreshing after manual capture (M420 V is instant, but added buffer). Click "Refresh History" if you want to see results immediately.
 
 ### Next Steps (Future Versions)
 - UBL/Linear leveling format support
@@ -334,14 +334,26 @@ AGPLv3 — See `LICENSE` file for details.
 
 ## Changelog
 
-### v0.2.0 (Current)
+### v0.2.1 (Current)
+- ✅ Added "Save Current Mesh" button
+- ✅ Software update hook for OctoPrint Plugin Manager
+- ✅ Fixed notifications to use PNotify (standard OctoPrint API)
+- ✅ Added capture-in-progress guard to prevent race conditions
+- ✅ Namespaced inner tab IDs to prevent conflicts with other plugins
+- ✅ Null-safe template bindings for delta matrix and parsed mesh
+- ✅ Added error handling on history fetch AJAX call
+- ✅ Fixed blob URL memory leak in CSV export
+- ✅ Dedicated rotating log file for plugin diagnostics
+- ✅ Version strings now derived from plugin metadata (no hardcoded values)
+
+### v0.2.0
 - ✅ Added capture on PRINT_FAILED and PRINT_CANCELLED
 - ✅ Auto-pruning: rotating buffer of 50 records max
 - ✅ CSV export functionality
 - ✅ Fixed first-capture N/A handling in UI
 - ✅ Clean integer filenames (no float timestamps)
 
-### v0.1.0 (Initial MVP)
+### v0.1.0 (Initial)
 - ✅ Core capture on PRINT_DONE
 - ✅ M420 V parser with strict bilinear validation
 - ✅ Delta stats (max, mean, matrix)
