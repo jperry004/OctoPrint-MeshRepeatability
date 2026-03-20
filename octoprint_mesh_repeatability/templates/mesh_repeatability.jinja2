@@ -1,0 +1,60 @@
+<div id="tab_plugin_mesh_repeatability">
+    <div class="row-fluid">
+        <button class="btn btn-primary" data-bind="click: captureNow, disable: isCapturing">
+            <span data-bind="text: isCapturing() ? 'Capturing...' : 'Capture Mesh Now'"></span>
+        </button>
+        <button class="btn" data-bind="click: fetchHistory">Refresh History</button>
+        <button class="btn btn-success" data-bind="click: exportCsv">Export History as CSV</button>
+    </div>
+
+    <hr>
+
+    <div class="row-fluid">
+        <div class="span4">
+            <h4>History (max 50)</h4>
+            <ul class="nav nav-pills nav-stacked" data-bind="foreach: history">
+                <li data-bind="css: { active: $parent.selectedRecord() && $parent.selectedRecord().id === id }">
+                    <a href="#" data-bind="click: $parent.selectRecord">
+                        <span data-bind="text: new Date(timestamp * 1000).toLocaleString()"></span>
+                        <br>
+                        <small class="muted" data-bind="text: 'Trigger: ' + trigger"></small>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="span8" data-bind="with: selectedRecord">
+            <h4>Details: <span data-bind="text: new Date(timestamp * 1000).toLocaleString()"></span></h4>
+            <p><strong>Status:</strong> <span data-bind="text: parse_status"></span></p>
+            <p class="text-error" data-bind="text: parse_error"></p>
+
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#mesh_stats" data-toggle="tab">Stats & Mesh</a></li>
+                <li><a href="#mesh_raw" data-toggle="tab">Raw Text</a></li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="mesh_stats">
+                    <!-- NEW: clean N/A handling -->
+                    <div class="well well-small" data-bind="if: stats_vs_previous && stats_vs_previous.max_abs_delta !== 'N/A'">
+                        <strong>Vs Previous Capture:</strong><br>
+                        Max Absolute Delta: <span data-bind="text: stats_vs_previous.max_abs_delta"></span><br>
+                        Mean Absolute Delta: <span data-bind="text: stats_vs_previous.mean_abs_delta"></span>
+                    </div>
+                    <p class="muted" data-bind="if: !(stats_vs_previous && stats_vs_previous.max_abs_delta !== 'N/A')">
+                        First capture (or no valid previous mesh) — comparison starts with the next print.
+                    </p>
+
+                    <h5>Delta Matrix</h5>
+                    <pre data-bind="text: $root.formatMatrix(stats_vs_previous.delta_matrix)"></pre>
+                    <h5>Current Parsed Mesh</h5>
+                    <pre data-bind="text: $root.formatMatrix(parsed_mesh)"></pre>
+                </div>
+
+                <div class="tab-pane" id="mesh_raw">
+                    <pre data-bind="text: raw_text" style="max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
