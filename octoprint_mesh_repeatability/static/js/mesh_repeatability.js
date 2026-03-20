@@ -1,4 +1,4 @@
-$(function() {
+$(function () {
     function MeshRepeatabilityViewModel(parameters) {
         var self = this;
         var PLUGIN_ID = "mesh_repeatability";
@@ -8,52 +8,42 @@ $(function() {
         self.selectedRecord = null;
         self.isCapturing = false;
 
-        self.formatMatrix = function(matrix) {
-            if (!matrix || !matrix.length) {
-                return "No data";
-            }
+        // ── Formatting helpers ────────────────────────────────────────
 
-            return matrix.map(function(row) {
-                return row.map(function(val) {
-                    return Number(val).toFixed(3).padStart(8, " ");
-                }).join(" ");
-            }).join("\n");
+        self.formatMatrix = function (matrix) {
+            if (!matrix || !matrix.length) return "No data";
+            return matrix
+                .map(function (row) {
+                    return row
+                        .map(function (val) {
+                            return Number(val).toFixed(3).padStart(8, " ");
+                        })
+                        .join(" ");
+                })
+                .join("\n");
         };
 
-        self.setUiStatus = function(message) {
+        // ── UI rendering ─────────────────────────────────────────────
+
+        self.setUiStatus = function (message) {
             $("#mesh_repeatability_ui_status span").text(message);
         };
 
-        self.renderDiagnostics = function(diagnostics) {
-            var statusBox = $("#mesh_repeatability_backend_status");
-
+        self.renderDiagnostics = function (diagnostics) {
+            var box = $("#mesh_repeatability_backend_status");
             if (!diagnostics) {
-                statusBox.hide();
+                box.hide();
                 return;
             }
-
-            statusBox.find("span").text(
+            box.find("span").text(
                 "State: " + diagnostics.capture_state +
-                " | Total Captures: " + diagnostics.total_captures +
-                " | History: " + diagnostics.history_count + " records"
+                " | Captures: " + diagnostics.total_captures +
+                " | History: " + diagnostics.history_count
             );
-            statusBox.show();
+            box.show();
         };
 
-        self.renderBindingDiagnostics = function() {
-            var rootCount = $(rootSelector).length;
-            var buttonCount = $(rootSelector).find("button").length;
-            var bindingBox = $("#mesh_repeatability_binding_status");
-
-            bindingBox.find("span").text(
-                "Roots: " + rootCount +
-                " | Buttons: " + buttonCount +
-                " | Handlers: attached"
-            );
-            bindingBox.show();
-        };
-
-        self.renderDetails = function(record) {
+        self.renderDetails = function (record) {
             var emptyState = $("#mesh_repeatability_empty_state");
             var details = $("#mesh_repeatability_details");
 
@@ -66,7 +56,9 @@ $(function() {
             emptyState.hide();
             details.show();
 
-            $("#mesh_repeatability_detail_timestamp").text(new Date(record.timestamp * 1000).toLocaleString());
+            $("#mesh_repeatability_detail_timestamp").text(
+                new Date(record.timestamp * 1000).toLocaleString()
+            );
             $("#mesh_repeatability_detail_status").text(record.parse_status || "");
 
             if (record.parse_error) {
@@ -91,7 +83,7 @@ $(function() {
             $("#mesh_repeatability_detail_raw").text(record.raw_text || "");
         };
 
-        self.renderHistory = function() {
+        self.renderHistory = function () {
             var list = $("#mesh_repeatability_history");
             list.empty();
 
@@ -100,7 +92,7 @@ $(function() {
                 return;
             }
 
-            self.history.forEach(function(record) {
+            self.history.forEach(function (record) {
                 var item = $("<li>");
                 if (self.selectedRecord && self.selectedRecord.id === record.id) {
                     item.addClass("active");
@@ -110,7 +102,7 @@ $(function() {
                 link.append($("<span>").text(new Date(record.timestamp * 1000).toLocaleString()));
                 link.append("<br>");
                 link.append($("<small class='muted'>").text("Trigger: " + record.trigger));
-                link.on("click", function(e) {
+                link.on("click", function (e) {
                     e.preventDefault();
                     self.selectedRecord = record;
                     self.renderHistory();
@@ -124,30 +116,32 @@ $(function() {
             self.renderDetails(self.selectedRecord || self.history[0]);
         };
 
-        self.updateActionButtons = function() {
-            $("#mesh_repeatability_capture_now").prop("disabled", self.isCapturing);
-            $("#mesh_repeatability_save_current").prop("disabled", self.isCapturing);
-            $("#mesh_repeatability_refresh_history").prop("disabled", self.isCapturing);
-            $("#mesh_repeatability_export_csv").prop("disabled", self.isCapturing);
-            $("#mesh_repeatability_capture_now_label").text(self.isCapturing ? "Capturing..." : "Capture Mesh Now");
+        self.updateActionButtons = function () {
+            var capturing = self.isCapturing;
+            $("#mesh_repeatability_capture_now").prop("disabled", capturing);
+            $("#mesh_repeatability_save_current").prop("disabled", capturing);
+            $("#mesh_repeatability_refresh_history").prop("disabled", capturing);
+            $("#mesh_repeatability_export_csv").prop("disabled", capturing);
+            $("#mesh_repeatability_capture_now_label").text(
+                capturing ? "Capturing\u2026" : "Capture Mesh Now"
+            );
         };
 
-        self.fetchHistory = function() {
-            self.setUiStatus("Loading history...");
+        // ── Data fetching ─────────────────────────────────────────────
+
+        self.fetchHistory = function () {
+            self.setUiStatus("Loading history\u2026");
             OctoPrint.simpleApiGet(PLUGIN_ID)
-                .done(function(response) {
+                .done(function (response) {
                     var previousId = self.selectedRecord ? self.selectedRecord.id : null;
                     self.history = response.history || [];
 
+                    self.selectedRecord = null;
                     if (previousId) {
-                        self.selectedRecord = null;
-                        self.history.forEach(function(record) {
-                            if (record.id === previousId) {
-                                self.selectedRecord = record;
-                            }
+                        self.history.forEach(function (record) {
+                            if (record.id === previousId) self.selectedRecord = record;
                         });
                     }
-
                     if (!self.selectedRecord && self.history.length) {
                         self.selectedRecord = self.history[0];
                     }
@@ -156,108 +150,167 @@ $(function() {
                     self.renderHistory();
                     self.setUiStatus("Ready");
                 })
-                .fail(function(xhr) {
-                    console.error("[MeshRepeat] fetchHistory FAILED:", xhr.status, xhr.responseText);
-                    self.setUiStatus("History request failed");
+                .fail(function (xhr) {
+                    console.error("[MeshRepeat] fetchHistory failed:", xhr.status);
+                    self.setUiStatus("Failed to load history");
                 });
         };
 
-        self.runCommand = function(command, successMessage, failureMessage) {
+        // ── Commands ──────────────────────────────────────────────────
+
+        self.runCommand = function (command, pendingMessage, failMessage) {
             self.isCapturing = true;
             self.updateActionButtons();
-            self.setUiStatus(successMessage);
+            self.setUiStatus(pendingMessage);
 
             OctoPrint.simpleApiCommand(PLUGIN_ID, command, {})
-                .done(function(response) {
+                .done(function (response) {
                     console.log("[MeshRepeat] command OK:", command, response);
                     new PNotify({
                         title: "Mesh Repeatability",
-                        text: successMessage,
+                        text: pendingMessage,
                         type: "info",
                         hide: true,
-                        delay: 3000
+                        delay: 3000,
                     });
-
-                    window.setTimeout(function() {
-                        self.isCapturing = false;
-                        self.updateActionButtons();
-                        self.fetchHistory();
-                    }, 3000);
+                    // Don't blindly wait — the websocket handler will refresh
+                    // when capture_complete arrives.  But set a safety fallback
+                    // in case the message is missed.
+                    self._fallbackTimer = window.setTimeout(function () {
+                        if (self.isCapturing) {
+                            self.isCapturing = false;
+                            self.updateActionButtons();
+                            self.fetchHistory();
+                        }
+                    }, 35000); // slightly longer than server-side timeout
                 })
-                .fail(function(xhr) {
-                    console.error("[MeshRepeat] command FAILED:", command, xhr.status, xhr.responseText);
+                .fail(function (xhr) {
+                    console.error("[MeshRepeat] command failed:", command, xhr.status);
                     new PNotify({
                         title: "Mesh Repeatability",
-                        text: failureMessage + " (HTTP " + xhr.status + ")",
+                        text: failMessage + " (HTTP " + xhr.status + ")",
                         type: "error",
                         hide: true,
-                        delay: 5000
+                        delay: 5000,
                     });
                     self.isCapturing = false;
                     self.updateActionButtons();
-                    self.setUiStatus(failureMessage);
+                    self.setUiStatus(failMessage);
                 });
         };
 
-        self.exportCsv = function() {
-            self.setUiStatus("Exporting CSV...");
+        self.exportCsv = function () {
+            self.setUiStatus("Exporting CSV\u2026");
             OctoPrint.simpleApiCommand(PLUGIN_ID, "export_csv", {})
-                .done(function(response) {
+                .done(function (response) {
                     if (response && response.csv) {
                         var blob = new Blob([response.csv], { type: "text/csv;charset=utf-8" });
                         var url = URL.createObjectURL(blob);
-                        var link = document.createElement("a");
-                        link.href = url;
-                        link.download = response.filename || "mesh_history.csv";
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                        var a = document.createElement("a");
+                        a.href = url;
+                        a.download = response.filename || "mesh_history.csv";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                         self.setUiStatus("CSV exported");
                     }
                 })
-                .fail(function(xhr) {
-                    console.error("[MeshRepeat] exportCsv FAILED:", xhr.status, xhr.responseText);
+                .fail(function (xhr) {
+                    console.error("[MeshRepeat] CSV export failed:", xhr.status);
                     self.setUiStatus("CSV export failed");
                 });
         };
 
-        self.attachHandlers = function() {
+        // ── Event handlers ────────────────────────────────────────────
+
+        self.attachHandlers = function () {
             $(rootSelector).off("click.meshrepeat");
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_capture_now", function(e) {
+
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_capture_now", function (e) {
                 e.preventDefault();
-                self.runCommand("capture_now", "Capturing mesh from printer...", "Failed to start capture");
+                self.runCommand("capture_now", "Capturing mesh from printer\u2026", "Failed to start capture");
             });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_save_current", function(e) {
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_save_current", function (e) {
                 e.preventDefault();
-                self.runCommand("save_current_mesh", "Capturing current mesh from printer...", "Failed to save mesh");
+                self.runCommand("save_current_mesh", "Capturing current mesh\u2026", "Failed to save mesh");
             });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_refresh_history", function(e) {
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_refresh_history", function (e) {
                 e.preventDefault();
                 self.fetchHistory();
             });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_export_csv", function(e) {
+            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_export_csv", function (e) {
                 e.preventDefault();
                 self.exportCsv();
             });
 
-            self.renderBindingDiagnostics();
             self.updateActionButtons();
         };
 
-        self.onBeforeBinding = function() {
+        // ── OctoPrint ViewModel lifecycle ─────────────────────────────
+
+        self.onAfterBinding = function () {
             self.attachHandlers();
             self.fetchHistory();
         };
 
-        self.onAfterBinding = function() {
-            self.attachHandlers();
-            self.fetchHistory();
+        self.onDataUpdaterPluginMessage = function (plugin, data) {
+            if (plugin !== PLUGIN_ID || !data || !data.type) return;
+
+            if (data.type === "capture_complete") {
+                // Clear any fallback timer
+                if (self._fallbackTimer) {
+                    window.clearTimeout(self._fallbackTimer);
+                    self._fallbackTimer = null;
+                }
+
+                self.isCapturing = false;
+                self.updateActionButtons();
+                self.fetchHistory();
+
+                var record = data.record;
+                if (record && record.parse_status === "success") {
+                    new PNotify({
+                        title: "Mesh Repeatability",
+                        text: "Mesh captured successfully.",
+                        type: "success",
+                        hide: true,
+                        delay: 3000,
+                    });
+                } else {
+                    new PNotify({
+                        title: "Mesh Repeatability",
+                        text: "Capture finished but parsing failed.",
+                        type: "warning",
+                        hide: true,
+                        delay: 5000,
+                    });
+                }
+            }
+
+            if (data.type === "capture_timeout") {
+                if (self._fallbackTimer) {
+                    window.clearTimeout(self._fallbackTimer);
+                    self._fallbackTimer = null;
+                }
+
+                self.isCapturing = false;
+                self.updateActionButtons();
+                self.setUiStatus("Capture timed out");
+
+                new PNotify({
+                    title: "Mesh Repeatability",
+                    text: data.message || "Capture timed out.",
+                    type: "error",
+                    hide: true,
+                    delay: 5000,
+                });
+            }
         };
     }
 
     OCTOPRINT_VIEWMODELS.push({
         construct: MeshRepeatabilityViewModel,
-        elements: ["#tab_plugin_mesh_repeatability"]
+        elements: ["#tab_plugin_mesh_repeatability"],
     });
 });

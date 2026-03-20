@@ -1,4 +1,4 @@
-<div class="row-fluid">
+<div class="row-fluid" style="margin-bottom: 10px;">
     <button id="mesh_repeatability_capture_now" class="btn btn-primary">
         <span id="mesh_repeatability_capture_now_label">Capture Mesh Now</span>
     </button>
@@ -6,40 +6,33 @@
         <i class="icon-save"></i> Save Current Mesh
     </button>
     <button id="mesh_repeatability_refresh_history" class="btn">Refresh History</button>
-    <button id="mesh_repeatability_export_csv" class="btn btn-success">Export History as CSV</button>
+    <button id="mesh_repeatability_export_csv" class="btn btn-success">Export CSV</button>
 </div>
 
-<div id="mesh_repeatability_ui_status" class="alert alert-warning" style="margin-top: 10px;">
-    <strong>UI Status:</strong>
-    <span>Initializing...</span>
+<div id="mesh_repeatability_ui_status" class="alert alert-warning" style="margin-top: 5px; padding: 6px 10px;">
+    <strong>Status:</strong> <span>Initializing&hellip;</span>
 </div>
 
-<div id="mesh_repeatability_backend_status" class="alert alert-info" style="display: none;">
-    <strong>Status:</strong>
-    <span></span>
-</div>
-
-<div id="mesh_repeatability_binding_status" class="alert alert-info" style="display: none;">
-    <strong>Binding Diagnostics:</strong>
-    <span></span>
+<div id="mesh_repeatability_backend_status" class="alert alert-info" style="display: none; padding: 6px 10px;">
+    <strong>Backend:</strong> <span></span>
 </div>
 
 <hr>
 
 <div class="row-fluid">
     <div class="span4">
-        <h4>History (max 50)</h4>
+        <h4>History <small class="muted">(max 50)</small></h4>
         <ul id="mesh_repeatability_history" class="nav nav-pills nav-stacked"></ul>
     </div>
 
     <div class="span8">
         <div id="mesh_repeatability_empty_state" class="muted">
-            No captures yet.
+            No captures yet. Click <strong>Capture Mesh Now</strong> or run a print to get started.
         </div>
 
         <div id="mesh_repeatability_details" style="display: none;">
             <h4>
-                Details:
+                Capture:
                 <span id="mesh_repeatability_detail_timestamp"></span>
             </h4>
             <p>
@@ -49,22 +42,22 @@
             <p id="mesh_repeatability_detail_error" class="text-error" style="display: none;"></p>
 
             <div id="mesh_repeatability_stats_box" class="well well-small" style="display: none;">
-                <strong>Vs Previous Capture:</strong><br>
-                Max Absolute Delta: <span id="mesh_repeatability_detail_max_delta"></span><br>
-                Mean Absolute Delta: <span id="mesh_repeatability_detail_mean_delta"></span>
+                <strong>Delta vs Previous:</strong><br>
+                Max Absolute: <span id="mesh_repeatability_detail_max_delta"></span><br>
+                Mean Absolute: <span id="mesh_repeatability_detail_mean_delta"></span>
             </div>
             <p id="mesh_repeatability_stats_na" class="muted" style="display: none;">
-                First capture (or no valid previous mesh) - comparison starts with the next print.
+                First capture &mdash; comparison will start with the next one.
             </p>
 
             <h5>Delta Matrix</h5>
             <pre id="mesh_repeatability_detail_delta">No data</pre>
 
-            <h5>Current Parsed Mesh</h5>
+            <h5>Parsed Mesh</h5>
             <pre id="mesh_repeatability_detail_mesh">No data</pre>
 
-            <h5>Raw Text</h5>
-            <pre id="mesh_repeatability_detail_raw" style="max-height: 400px; overflow-y: auto;"></pre>
+            <h5>Raw Output</h5>
+            <pre id="mesh_repeatability_detail_raw" style="max-height: 300px; overflow-y: auto;"></pre>
         </div>
     </div>
 </div>
