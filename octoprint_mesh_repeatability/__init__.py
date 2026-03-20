@@ -449,11 +449,25 @@ class MeshRepeatabilityPlugin(
                 continue
 
             if in_grid:
+                if clean_line == "":
+                    self._logger.debug(f"[PARSER] Ignored blank line at {line_num}")
+                    self._file_log(f"  Ignored blank line at {line_num}", "DEBUG")
+                    continue
+
                 # Skip header line (0 1 2 3...)
                 if re.match(r'^\s*0\s+1\s+2', clean_line):
                     self._logger.debug(f"[PARSER] Skipped header line at {line_num}")
                     self._file_log(f"  Skipped header line at {line_num}", "DEBUG")
                     continue
+
+                if (
+                    clean_line.startswith("Subdivided with")
+                    or clean_line.startswith("echo:")
+                    or clean_line.startswith("ok")
+                ):
+                    self._logger.debug(f"[PARSER] End of bilinear grid at line {line_num}: {clean_line}")
+                    self._file_log(f"  End of bilinear grid at line {line_num}: {clean_line}", "DEBUG")
+                    break
 
                 parts = clean_line.split()
 
@@ -578,7 +592,7 @@ class MeshRepeatabilityPlugin(
         )
 
 __plugin_name__ = "Mesh Repeatability"
-__plugin_version__ = "0.2.5"
+__plugin_version__ = "0.2.6"
 __plugin_pythoncompat__ = ">=3.7,<4"
 
 def __plugin_load__():

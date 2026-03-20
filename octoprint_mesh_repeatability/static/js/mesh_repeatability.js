@@ -99,12 +99,25 @@ $(function() {
             OctoPrint.simpleApiGet(PLUGIN_ID)
                 .done(function(response) {
                     console.log("[MeshRepeat] fetchHistory OK:", response);
-                    self.history(response.history || []);
+                    var previousSelection = self.selectedRecord() ? self.selectedRecord().id : null;
+                    var history = response.history || [];
+                    self.history(history);
                     if (response.diagnostics) {
                         self.diagnostics(response.diagnostics);
                     }
-                    if (self.history().length > 0 && !self.selectedRecord()) {
-                        self.selectedRecord(self.history()[0]);
+                    if (history.length > 0) {
+                        var nextSelection = history[0];
+                        if (previousSelection) {
+                            for (var i = 0; i < history.length; i++) {
+                                if (history[i].id === previousSelection) {
+                                    nextSelection = history[i];
+                                    break;
+                                }
+                            }
+                        }
+                        self.selectedRecord(nextSelection);
+                    } else {
+                        self.selectedRecord(null);
                     }
                     if (!self.isCapturing()) {
                         self.uiStatus("Ready");
