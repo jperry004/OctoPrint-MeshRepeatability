@@ -10,12 +10,24 @@
         <button id="mesh_repeatability_export_csv" class="btn btn-success">Export History as CSV</button>
     </div>
 
+    <div class="alert alert-warning" style="margin-top: 10px;">
+        <strong>UI Status:</strong>
+        <span data-bind="text: uiStatus"></span>
+    </div>
+
     <!-- Diagnostic Info -->
     <div class="alert alert-info" data-bind="if: diagnostics">
         <strong>Status:</strong>
         State: <span data-bind="text: diagnostics().capture_state"></span> |
         Total Captures: <span data-bind="text: diagnostics().total_captures"></span> |
         History: <span data-bind="text: diagnostics().history_count"></span> records
+    </div>
+
+    <div class="alert alert-info" data-bind="if: bindingDiagnostics">
+        <strong>Binding Diagnostics:</strong>
+        Roots: <span data-bind="text: bindingDiagnostics().rootCount"></span> |
+        Buttons: <span data-bind="text: bindingDiagnostics().buttonCount"></span> |
+        Handlers: <span data-bind="text: bindingDiagnostics().handlersAttached ? 'attached' : 'missing'"></span>
     </div>
 
     <hr>

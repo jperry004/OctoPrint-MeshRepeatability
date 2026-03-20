@@ -10,6 +10,14 @@ $(function() {
         self.selectedRecord = ko.observable(null);
         self.isCapturing = ko.observable(false);
         self.diagnostics = ko.observable(null);
+        self.uiStatus = ko.observable("Initializing...");
+        self.bindingDiagnostics = ko.observable({
+            rootCount: 0,
+            buttonCount: 0,
+            buttonContexts: [],
+            lastBoundAt: null,
+            handlersAttached: false
+        });
 
         self.updateActionButtons = function() {
             var capturing = self.isCapturing();
@@ -18,6 +26,71 @@ $(function() {
             $("#mesh_repeatability_refresh_history").prop("disabled", capturing);
             $("#mesh_repeatability_export_csv").prop("disabled", capturing);
             $("#mesh_repeatability_capture_now_label").text(capturing ? "Capturing..." : "Capture Mesh Now");
+            self.uiStatus(capturing ? "Capture in progress..." : "Ready");
+        };
+
+        self.inspectUiState = function(reason) {
+            var roots = $(rootSelector);
+            var buttons = roots.find("button");
+            var buttonContexts = [];
+
+            buttons.each(function(index, button) {
+                var context = ko.contextFor(button);
+                buttonContexts.push({
+                    index: index,
+                    id: button.id || "(no id)",
+                    hasContext: !!context
+                });
+            });
+
+            var snapshot = {
+                rootCount: roots.length,
+                buttonCount: buttons.length,
+                buttonContexts: buttonContexts,
+                lastBoundAt: new Date().toISOString(),
+                handlersAttached: true
+            };
+
+            self.bindingDiagnostics(snapshot);
+            console.log("[MeshRepeat] UI inspection (" + reason + "):", snapshot);
+
+            if (roots.length !== 1) {
+                console.warn("[MeshRepeat] Expected exactly one tab root, found", roots.length);
+                self.uiStatus("UI warning: expected 1 tab root, found " + roots.length);
+            } else if (buttonContexts.some(function(entry) { return !entry.hasContext; })) {
+                console.warn("[MeshRepeat] Some buttons have no Knockout context:", buttonContexts);
+                self.uiStatus("UI warning: button context mismatch detected");
+            } else if (!self.isCapturing()) {
+                self.uiStatus("Ready");
+            }
+        };
+
+        self.attachActionHandlers = function() {
+            var root = $(rootSelector);
+
+            root.off("click.meshrepeat");
+            root.on("click.meshrepeat", "#mesh_repeatability_capture_now", function(e) {
+                e.preventDefault();
+                console.log("[MeshRepeat] Delegated click: capture");
+                self.captureNow();
+            });
+            root.on("click.meshrepeat", "#mesh_repeatability_save_current", function(e) {
+                e.preventDefault();
+                console.log("[MeshRepeat] Delegated click: save current");
+                self.saveCurrentMesh();
+            });
+            root.on("click.meshrepeat", "#mesh_repeatability_refresh_history", function(e) {
+                e.preventDefault();
+                console.log("[MeshRepeat] Delegated click: refresh history");
+                self.fetchHistory();
+            });
+            root.on("click.meshrepeat", "#mesh_repeatability_export_csv", function(e) {
+                e.preventDefault();
+                console.log("[MeshRepeat] Delegated click: export csv");
+                self.exportCsv();
+            });
+
+            self.inspectUiState("attachActionHandlers");
         };
 
         // ── Fetch History (GET) ──────────────────────────────────
@@ -33,9 +106,13 @@ $(function() {
                     if (self.history().length > 0 && !self.selectedRecord()) {
                         self.selectedRecord(self.history()[0]);
                     }
+                    if (!self.isCapturing()) {
+                        self.uiStatus("Ready");
+                    }
                 })
                 .fail(function(xhr) {
                     console.error("[MeshRepeat] fetchHistory FAILED:", xhr.status, xhr.responseText);
+                    self.uiStatus("History request failed");
                 });
         };
 
@@ -68,6 +145,7 @@ $(function() {
                         delay: 5000
                     });
                     self.isCapturing(false);
+                    self.uiStatus("Capture failed");
                 });
         };
 
@@ -100,6 +178,7 @@ $(function() {
                         delay: 5000
                     });
                     self.isCapturing(false);
+                    self.uiStatus("Save current mesh failed");
                 });
         };
 
@@ -137,6 +216,7 @@ $(function() {
                         hide: true,
                         delay: 5000
                     });
+                    self.uiStatus("CSV export failed");
                 });
         };
 
@@ -159,33 +239,31 @@ $(function() {
         // ── Lifecycle ────────────────────────────────────────────
         self.onBeforeBinding = function() {
             console.log("[MeshRepeat] onBeforeBinding - plugin initializing");
+            self.uiStatus("Loading history...");
             self.fetchHistory();
         };
 
         self.onAfterBinding = function() {
             console.log("[MeshRepeat] onAfterBinding - bindings applied, UI ready");
-            $(rootSelector).off("click.meshrepeat");
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_capture_now", function(e) {
-                e.preventDefault();
-                self.captureNow();
-            });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_save_current", function(e) {
-                e.preventDefault();
-                self.saveCurrentMesh();
-            });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_refresh_history", function(e) {
-                e.preventDefault();
-                self.fetchHistory();
-            });
-            $(rootSelector).on("click.meshrepeat", "#mesh_repeatability_export_csv", function(e) {
-                e.preventDefault();
-                self.exportCsv();
-            });
+            self.attachActionHandlers();
             self.updateActionButtons();
         };
 
         self.isCapturing.subscribe(function() {
             self.updateActionButtons();
+        });
+
+        $(document).off("shown.meshrepeat", 'a[href="#tab_plugin_mesh_repeatability"]');
+        $(document).on("shown.meshrepeat", 'a[href="#tab_plugin_mesh_repeatability"]', function() {
+            console.log("[MeshRepeat] Tab shown event detected");
+            self.attachActionHandlers();
+            self.updateActionButtons();
+        });
+
+        $(window).off("focus.meshrepeat");
+        $(window).on("focus.meshrepeat", function() {
+            console.log("[MeshRepeat] Window focus event detected");
+            self.inspectUiState("window-focus");
         });
 
         console.log("[MeshRepeat] ViewModel constructed OK");
