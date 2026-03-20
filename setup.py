@@ -3,7 +3,7 @@ from setuptools import setup
 plugin_identifier = "mesh_repeatability"
 plugin_package = "octoprint_mesh_repeatability"
 plugin_name = "OctoPrint-MeshRepeatability"
-plugin_version = "0.2.6"
+plugin_version = "0.2.7"
 plugin_description = "Captures and compares Marlin M420 V meshes for repeatability testing."
 plugin_author = "jperry004"
 plugin_author_email = "128223478+jperry004@users.noreply.github.com"
