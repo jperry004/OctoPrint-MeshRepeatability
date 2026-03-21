@@ -58,7 +58,7 @@ class MeshRepeatabilityPlugin(
         }
         trigger = trigger_map.get(event, "unknown")
         filename = payload.get("name", "unknown")
-        self._logger.info("Print event %s — starting mesh capture", trigger)
+        self._logger.info("Print event %s - starting mesh capture", trigger)
         self._start_capture(trigger=trigger, filename=filename)
 
     # ── Simple API ─────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ class MeshRepeatabilityPlugin(
             self._logger.info("Save-current-mesh requested")
             self._start_capture(trigger="manual_save", filename="current_mesh")
             return octoprint.server.api.jsonify(
-                {"status": "capture_started", "message": "Capturing current mesh…"}
+                {"status": "capture_started", "message": "Capturing current mesh..."}
             )
 
         if command == "export_csv":
@@ -146,7 +146,7 @@ class MeshRepeatabilityPlugin(
             )
             self._reset_capture()
             self._send_ui_message("capture_timeout", {
-                "message": "Capture timed out — printer did not respond in time."
+                "message": "Capture timed out - printer did not respond in time."
             })
 
     def _reset_capture(self):
@@ -164,7 +164,7 @@ class MeshRepeatabilityPlugin(
 
         if self._capture_state == "pending":
             if clean.startswith("Bilinear Leveling Grid:"):
-                self._logger.debug("Grid header detected — capturing")
+                self._logger.debug("Grid header detected - capturing")
                 self._capture_state = "capturing"
                 self._capture_buffer.append(line)
             return line
@@ -173,7 +173,7 @@ class MeshRepeatabilityPlugin(
             self._capture_buffer.append(line)
             if clean.startswith("ok"):
                 self._logger.debug(
-                    "End marker received — %d lines captured", len(self._capture_buffer)
+                    "End marker received - %d lines captured", len(self._capture_buffer)
                 )
                 self._finish_capture()
             return line
@@ -297,7 +297,7 @@ class MeshRepeatabilityPlugin(
             if clean == "":
                 continue
 
-            # Column header row (0  1  2  3 …)
+            # Column header row (0  1  2  3 ...)
             if re.match(r"^\s*0\s+1\s+2", clean):
                 continue
 
@@ -317,7 +317,7 @@ class MeshRepeatabilityPlugin(
                 except ValueError:
                     break
             elif grid:
-                # Non-data line after we already have rows → end of grid
+                # Non-data line after we already have rows -> end of grid
                 break
 
         if not grid:
@@ -418,24 +418,8 @@ class MeshRepeatabilityPlugin(
     def get_assets(self):
         return dict(js=["js/mesh_repeatability.js"])
 
-    # ── Software Update ────────────────────────────────────────────────
-
-    def get_update_information(self):
-        return dict(
-            mesh_repeatability=dict(
-                displayName="Mesh Repeatability",
-                displayVersion=self._plugin_version,
-                type="github_release",
-                user="jperry004",
-                repo="OctoPrint-MeshRepeatability",
-                current=self._plugin_version,
-                pip="https://github.com/jperry004/OctoPrint-MeshRepeatability/archive/{target_version}.zip",
-            )
-        )
-
-
 __plugin_name__ = "Mesh Repeatability"
-__plugin_version__ = "0.3.1"
+__plugin_version__ = "0.3.2"
 __plugin_pythoncompat__ = ">=3.7,<4"
 
 
@@ -445,5 +429,4 @@ def __plugin_load__():
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.comm.protocol.gcode.received": __plugin_implementation__.process_received_line,
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
     }

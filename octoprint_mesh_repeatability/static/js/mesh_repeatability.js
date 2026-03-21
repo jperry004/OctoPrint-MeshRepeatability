@@ -173,7 +173,7 @@ $(function () {
                         hide: true,
                         delay: 3000,
                     });
-                    // Don't blindly wait — the websocket handler will refresh
+                    // Don't blindly wait - the websocket handler will refresh
                     // when capture_complete arrives.  But set a safety fallback
                     // in case the message is missed.
                     self._fallbackTimer = window.setTimeout(function () {

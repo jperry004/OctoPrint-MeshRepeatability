@@ -1,365 +1,139 @@
-# OctoPrint Mesh Repeatability Plugin (v0.2.1)
+# OctoPrint Mesh Repeatability
 
-A powerful OctoPrint plugin for capturing and comparing Marlin bed leveling mesh data to test printer repeatability. Perfect for troubleshooting leveling issues and validating mechanical stability.
+OctoPrint plugin for capturing Marlin `M420 V` bed mesh output after a print finishes, fails, or is cancelled, then comparing that mesh against the previous successful capture.
 
-## Features
+## What It Does
 
-### ✅ Core Functionality
-- **Automatic Mesh Capture**: Captures M420 V output automatically when:
-  - Print finishes successfully (`PRINT_DONE`)
-  - Print fails (`PRINT_FAILED`)
-  - Print is cancelled (`PRINT_CANCELLED`)
-  - Manual trigger via UI button
-- **Robust GCODE Parsing**: Strict, defensive parser for Marlin bilinear leveling grids
-  - Handles `Recv:` prefixes (with or without)
-  - Skips headers and formatting lines automatically
-  - Validates rectangular grid consistency
-  - Graceful error handling with detailed parse status
+- Automatically captures the active bilinear mesh on:
+  - `PRINT_DONE`
+  - `PRINT_FAILED`
+  - `PRINT_CANCELLED`
+- Supports manual capture from the plugin tab
+- Stores each capture as its own JSON file in the plugin data folder
+- Compares each successful capture against the previous successful capture
+- Shows:
+  - parsed mesh
+  - delta matrix
+  - max absolute delta
+  - mean absolute delta
+- Exports capture history as CSV
+- Keeps only the newest 50 saved captures
 
-### 📊 Analysis & Comparison
-- **Delta Statistics**: Compares current mesh against most recent successful capture
-  - Max absolute delta (largest change)
-  - Mean absolute delta (average change)
-  - Full delta matrix showing change at each probe point
-- **Per-Record JSON Storage**: Each capture saved as individual JSON for data integrity
-- **Persistent History**: Browse all 50 most recent captures in the UI
+## Requirements
 
-### 🔄 Data Management
-- **Rotating Buffer**: Automatic pruning keeps max 50 records (oldest deleted automatically)
-- **CSV Export**: Download full history with one click for Excel/analysis
-- **No Data Loss**: One corrupted JSON file won't affect history
+- OctoPrint 1.8+ recommended
+- Python 3.7 to 3.x
+- Marlin firmware with bilinear mesh output available from `M420 V`
 
-### 🖥️ User Interface
-- **History Browser**: Chronological list of all captures with trigger source
-- **Tabbed View**:
-  - **Stats & Mesh**: Compare meshes, view delta matrix, inspect parsed grid
-  - **Raw Text**: See exact serial output from printer for debugging
-- **Clean N/A Handling**: First capture clearly shows "no previous mesh for comparison"
-- **Formatted Matrix Display**: Nicely aligned grid output for readability
+## Install
 
----
-
-## Installation
-
-### Install From OctoPrint "Get More..."
+### OctoPrint Plugin Manager
 
 In OctoPrint:
 
-1. Open **Settings -> Plugin Manager**
-2. Click **Get More...**
-3. Paste this URL into **... from URL**
+1. Open `Settings -> Plugin Manager`
+2. Click `Get More...`
+3. Paste this URL into `... from URL`
 
 ```text
 https://github.com/jperry004/OctoPrint-MeshRepeatability/archive/refs/heads/main.zip
 ```
 
-4. Click **Install**
+4. Click `Install`
 5. Restart OctoPrint when prompted
 
-After restart, look for the new **Mesh Repeatability** tab.
-
-### Manual Install
-
-If you prefer the command line:
+### Manual pip Install
 
 ```bash
 pip install https://github.com/jperry004/OctoPrint-MeshRepeatability/archive/refs/heads/main.zip
 ```
 
----
-
 ## Usage
 
-### Manual Capture
-1. In OctoPrint, go to the **"Mesh Repeatability"** tab
-2. Click **"Capture Mesh Now"** button
-3. Wait 2–3 seconds for the printer to respond
-4. Your capture appears in the history list
-
 ### Automatic Capture
-- Every time a print finishes (successfully, fails, or is cancelled), a capture is automatically triggered
-- Appears in history immediately
 
-### View Results
-1. Click on any capture in the **History** list (left panel)
-2. Select the **"Stats & Mesh"** tab to see:
-   - **Trigger**: What caused the capture (print_done, print_failed, manual, etc.)
-   - **Max Absolute Delta**: Largest change from previous mesh
-   - **Mean Absolute Delta**: Average change across all points
-   - **Delta Matrix**: Row-by-row comparison
-   - **Current Parsed Mesh**: The grid values captured
-3. Select **"Raw Text"** tab to see the exact serial output for debugging
+Run or cancel a print normally. After the job ends, the plugin sends `M420 V`, parses the bilinear mesh, saves a JSON record, and updates the history list.
 
-### Export History
-1. Click the **"Export History as CSV"** button
-2. File downloads automatically as `mesh_repeatability_history_TIMESTAMP.csv`
-3. Open in Excel or your favorite analysis tool
-4. Columns: `id`, `timestamp`, `trigger`, `job_filename`, `parse_status`, `max_abs_delta`, `mean_abs_delta`
+### Manual Capture
 
-### Refresh History
-- Click **"Refresh History"** to reload the list (usually automatic, but useful if you manually delete files)
+Open the `Mesh Repeatability` tab and click:
 
----
+- `Capture Mesh Now`
+- `Save Current Mesh`
 
-## How It Works
+### Review Results
 
-### Architecture
+The plugin tab shows:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  OctoPrint Core                                         │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │ EventHandlerPlugin mixin                         │   │
-│  │ - PRINT_DONE / PRINT_FAILED / PRINT_CANCELLED  │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│  MeshRepeatabilityPlugin (__init__.py)                 │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │ State Machine                                    │   │
-│  │ idle → pending → capturing → idle              │   │
-│  │                                                  │   │
-│  │ + M420 V Parser (strict Bilinear format)       │   │
-│  │ + Delta Statistics Calculator                   │   │
-│  │ + Auto-Pruning (max 50 records)                │   │
-│  │ + CSV Export                                    │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│  Data Storage                                           │
-│  ~/.octoprint/data/mesh_repeatability/                 │
-│  ├── capture_1741234567890.json                        │
-│  ├── capture_1741234567891.json                        │
-│  └── ... (max 50 files, rotating buffer)              │
-└─────────────────────────────────────────────────────────┘
+- capture history
+- trigger source
+- parsed mesh
+- delta matrix
+- raw printer output
+
+### Export CSV
+
+Use `Export CSV` in the plugin tab to download summary history.
+
+## Data Storage
+
+Captures are stored in the OctoPrint plugin data folder as JSON files:
+
+```text
+~/.octoprint/data/mesh_repeatability/
 ```
 
-### Capture Flow
+Typical filenames:
 
-1. **Event Trigger**: Print finishes or manual button clicked
-2. **M420 V Sent**: Plugin sends "M420 V" to printer command queue
-3. **Serial Hook**: Plugin listens to incoming serial data via `octoprint.comm.protocol.gcode.received`
-4. **State Pending**: Waiting for "Bilinear Leveling Grid:" marker
-5. **State Capturing**: Buffering all lines until "ok" (end-of-command marker)
-6. **Parse & Save**: Extract grid values, calculate stats vs. previous, save JSON
-7. **Auto-Prune**: If >50 records exist, delete oldest
-8. **UI Update**: History refreshed, new capture visible
-
-### JSON Record Example
-
-```json
-{
-  "id": "1741234567890",
-  "timestamp": 1741234567.890,
-  "trigger": "print_done",
-  "job_filename": "benchy.gcode",
-  "command_used": "M420 V",
-  "raw_text": "Recv: Bilinear Leveling Grid:\nRecv: 0 1 2 3\n...",
-  "parsed_mesh": [
-    [0.105, -0.113, -0.115, 0.172],
-    [0.0, -0.149, -0.158, -0.025],
-    ...
-  ],
-  "parse_status": "success",
-  "parse_error": null,
-  "stats_vs_previous": {
-    "max_abs_delta": 0.012,
-    "mean_abs_delta": 0.005,
-    "delta_matrix": [
-      [0.001, -0.002, 0.000, 0.005],
-      ...
-    ]
-  }
-}
+```text
+capture_1773981439371.json
+capture_1773996358540.json
 ```
 
----
+On some non-default OctoPrint installs, the base directory may differ, for example:
 
-## Parser Logic (M420 V Format)
-
-The plugin expects standard Marlin bilinear leveling grid output:
-
+```text
+~/.HypoCenter/data/mesh_repeatability/
 ```
+
+## Supported Mesh Format
+
+The parser is built for Marlin bilinear mesh output from `M420 V`, including printers that insert blank lines between rows.
+
+Example:
+
+```text
 Bilinear Leveling Grid:
- 0   1   2   3
-0 +0.105 -0.113 -0.115 +0.172
-1 +0.000 -0.149 -0.158 -0.025
-2 -0.009 -0.166 -0.160 +0.040
-3 +0.079 -0.219 -0.068 +0.488
 
-Fade Height 5.00
+      0      1      2      3
+
+ 0 +0.543 +0.339 +0.322 +0.643
+
+ 1 +0.343 +0.137 +0.112 +0.304
+
+ 2 +0.353 +0.112 +0.098 +0.388
+
+ 3 +0.505 +0.128 +0.368 +1.030
+
+echo:Bed Leveling ON
 ok
 ```
 
-**Parser Steps:**
-1. Strip `Recv:` prefixes (if present)
-2. Wait for "Bilinear Leveling Grid:" trigger line
-3. Skip column headers (line starting with "0 1 2")
-4. Parse data rows: first token must be integer (row index), remaining tokens floats
-5. Stop on empty line or first non-grid line after data collection
+The plugin intentionally reads only the bilinear grid section and ignores later subdivided mesh output.
 
-**Features:**
-- Handles positive/negative values: `+0.105`, `-0.113`
-- Defensive line handling: skips junk gracefully
-- Dimension validation: all rows must have same column count
-- Error reporting: parse failures logged with details
+## Limitations
 
----
+- Designed for Marlin bilinear mesh output
+- Not intended for UBL parsing
+- Assumes `M420 V` is available and returns mesh rows
+- If the printer never responds, the capture times out automatically
 
-## Limitations & Known Issues
+## Development Notes
 
-### Current MVP Scope
-- **Bilinear Only**: Works strictly with Marlin bilinear leveling. UBL (Unified Bed Leveling) not supported yet.
-- **Sequential Assumption**: Assumes M420 V commands don't overlap. Rapid-fire M420 V spam could theoretically blend captures, though the `ok` terminator prevents infinite loops.
-- **Manual Pruning**: If you want to clean up history, delete files manually from `~/.octoprint/data/mesh_repeatability/`
-- **3-Second Wait**: UI waits 3 seconds before refreshing after manual capture (M420 V is instant, but added buffer). Click "Refresh History" if you want to see results immediately.
-
-### Next Steps (Future Versions)
-- UBL/Linear leveling format support
-- Chart of max_delta over time
-- Delete-all history button
-- Import historical data from external sources
-- Automatic export on schedule (daily/weekly CSV)
-- Webhook notifications on drift threshold
-
----
-
-## Troubleshooting
-
-### "No grid data found" in parse_status
-
-**Cause**: Parser didn't find "Bilinear Leveling Grid:" in the output.
-
-**Fix**:
-1. Verify your printer is Marlin with bilinear leveling enabled
-2. Check OctoPrint terminal: manually type `M420 V` and confirm output
-3. Look at the "Raw Text" tab for the failed capture to see what was received
-4. If the printer isn't outputting the grid, check Marlin firmware config
-
-### Mesh capturing doesn't trigger on print done
-
-**Cause**: OctoPrint event system not firing, or printer commands not accessible.
-
-**Fix**:
-1. Check OctoPrint logs: `tail -f ~/.octoprint/logs/octoprint.log`
-2. Verify printer is connected and idle (not mid-print)
-3. Try manual capture button to verify the plugin is loaded
-4. Restart OctoPrint and retry
-
-### CSV export is empty or shows "N/A"
-
-**Cause**: First capture has no previous mesh to compare against (expected).
-
-**Fix**: This is normal for the first capture. Run a second capture after the first, and the CSV will show delta stats in the second row.
-
-### History keeps showing old data after restart
-
-**Cause**: Browser caching the UI.
-
-**Fix**: Hard refresh your browser (Ctrl+Shift+R or Cmd+Shift+R on Mac).
-
----
-
-## File Structure
-
-```
-OctoPrint-MeshRepeatability/
-├── README.md                                  # This file
-├── setup.py                                   # Installation config
-├── .gitignore                                 # Git ignore rules
-└── octoprint_mesh_repeatability/
-    ├── __init__.py                            # Main plugin logic
-    ├── templates/
-    │   └── mesh_repeatability.jinja2          # UI template
-    └── static/
-        └── js/
-            └── mesh_repeatability.js          # Frontend logic
-```
-
----
-
-## Development & Contributing
-
-### Local Testing
-
-1. Clone this repo
-2. Create a Python venv: `python3 -m venv venv`
-3. Activate: `source venv/bin/activate`
-4. Install in editable mode: `pip install -e .`
-5. Run OctoPrint (if you have a test instance): `octoprint serve`
-
-### Parser Unit Tests
-
-A simple test script is included in the code comments. To verify parsing:
-
-```python
-import re
-
-raw_sample = """Recv: Bilinear Leveling Grid:
-Recv: 0 1 2 3
-Recv: 0 +0.105 -0.113 -0.115 +0.172
-...
-Recv: ok"""
-
-# Copy the _parse_m420_output logic and test
-```
-
-### Submitting Improvements
-
-1. Fork this repo
-2. Create a feature branch: `git checkout -b feature/your-idea`
-3. Commit changes: `git commit -am "Add your feature"`
-4. Push: `git push origin feature/your-idea`
-5. Open a Pull Request
-
----
+- Package identifier: `mesh_repeatability`
+- Python package: `octoprint_mesh_repeatability`
+- Current version: `0.3.2`
 
 ## License
 
-AGPLv3 — See `LICENSE` file for details.
-
----
-
-## Support
-
-- **Issues**: Open an issue on GitHub
-- **Feature Requests**: Describe your use case and desired behavior
-- **Questions**: Check the troubleshooting section above first
-
----
-
-## Changelog
-
-### v0.2.1 (Current)
-- ✅ Added "Save Current Mesh" button
-- ✅ Software update hook for OctoPrint Plugin Manager
-- ✅ Fixed notifications to use PNotify (standard OctoPrint API)
-- ✅ Added capture-in-progress guard to prevent race conditions
-- ✅ Namespaced inner tab IDs to prevent conflicts with other plugins
-- ✅ Null-safe template bindings for delta matrix and parsed mesh
-- ✅ Added error handling on history fetch AJAX call
-- ✅ Fixed blob URL memory leak in CSV export
-- ✅ Dedicated rotating log file for plugin diagnostics
-- ✅ Version strings now derived from plugin metadata (no hardcoded values)
-
-### v0.2.0
-- ✅ Added capture on PRINT_FAILED and PRINT_CANCELLED
-- ✅ Auto-pruning: rotating buffer of 50 records max
-- ✅ CSV export functionality
-- ✅ Fixed first-capture N/A handling in UI
-- ✅ Clean integer filenames (no float timestamps)
-
-### v0.1.0 (Initial)
-- ✅ Core capture on PRINT_DONE
-- ✅ M420 V parser with strict bilinear validation
-- ✅ Delta stats (max, mean, matrix)
-- ✅ Manual capture trigger
-- ✅ History browser with raw text view
-
----
-
-**Enjoy precision repeatability testing!** 🖨️📊
+AGPLv3. See `LICENSE`.
